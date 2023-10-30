@@ -26,7 +26,7 @@ def cross_validation(fold_count,train_data,max_epoch,train_batch_size=64,validat
     folds = kf.split(train_data)
     for fold, (train_index,validation_index) in enumerate(folds):
         torch.manual_seed(seed)
-        gnn = GNN(train_molecules_graphs[0].num_features,6,32,4)
+        gnn = GNN(train_molecules_graphs[0].num_features,6,64,4)
         gnn = gnn.to('cuda')
         optimizer = torch.optim.Adam(gnn.parameters(), lr=0.001)
         criterion = torch.nn.MSELoss()

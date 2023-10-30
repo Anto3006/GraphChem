@@ -11,9 +11,9 @@ class GNN(nn.Module):
     def __init__(self,node_features,edge_features,hidden_channels,heads):
         super().__init__()
         torch.manual_seed(3006)
-        self.conv1 = GATConv(node_features,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.2)
-        self.conv2 = GATConv(heads*hidden_channels,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.2)
-        self.conv3 = GATConv(heads*hidden_channels,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.2)
+        self.conv1 = GATConv(node_features,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.4)
+        self.conv2 = GATConv(heads*hidden_channels,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.4)
+        self.conv3 = GATConv(heads*hidden_channels,hidden_channels,edge_dim=edge_features,heads=heads,dropout=0.4)
         self.dropout0 = nn.Dropout1d(0.25)
         self.linear1 = Linear(heads*hidden_channels,hidden_channels)
         self.dropout1 = nn.Dropout1d(0.5)
