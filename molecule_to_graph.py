@@ -29,7 +29,7 @@ def get_atom_in_molecule_count(smiles_list):
     return atom_count
 
 def get_atomic_features(atom):
-    permitted_atoms = ['Cl', 'C', 'O', 'Br', 'N', 'F', 'S', 'I', 'H', 'Si', 'Li',"Unknown"]
+    permitted_atoms = ['Cl', 'C', 'O', 'Br', 'N', 'F', 'S', 'I', 'Si','P',"Unknown"]
 
     atom_type_encoding = one_hot_encoding(atom.GetSymbol(),permitted_atoms)
     n_heavy_neighbors_encoding = one_hot_encoding(atom.GetDegree(),[0,1,2,3,4,"More than 4"])
@@ -64,9 +64,10 @@ def get_bond_features(bond):
     
     return np.array(bond_feature_vector)
 
-def create_graph_molecule(smiles, target):
+def create_graph_molecule(smiles, target=None):
     # convert SMILES to RDKit mol object
-    mol = Chem.MolFromSmiles(smiles)
+    canon_smiles = Chem.CanonSmiles(smiles)
+    mol = Chem.MolFromSmiles(canon_smiles)
     # get feature dimensions
     n_nodes = mol.GetNumAtoms()
     n_edges = 2*mol.GetNumBonds()
@@ -98,10 +99,14 @@ def create_graph_molecule(smiles, target):
     
     EF = torch.tensor(EF, dtype = torch.float)
     
-    # construct label tensor
-    y_tensor = torch.tensor(np.array([target]), dtype = torch.float)
     
-    return Data(X, edge_index=E, edge_attr=EF,y=y_tensor)
+    graph = Data(X, edge_index=E, edge_attr=EF,smiles=smiles) 
+
+    if target != None: 
+        y_tensor = torch.tensor(np.array([target]), dtype = torch.float)
+        graph.y = y_tensor
+        
+    return graph
 
 def create_graph_list(smiles_list,target_list):
     data = []
