@@ -43,11 +43,19 @@ def get_atomic_features(atom):
     atomic_mass = [float((atom.GetMass()))]
     
     vdw_radius = [float((Chem.GetPeriodicTable().GetRvdw(atom.GetAtomicNum())))]
+
+    permitted_valence = [1,2,3,4,"More than 4"]
+    valence = one_hot_encoding(atom.GetTotalValence(),permitted_valence)
     
     covalent_radius = [float((Chem.GetPeriodicTable().GetRcovalent(atom.GetAtomicNum())))]
+
+    permitted_Hs = [0,1,2,3,4,"More than 4"]
+    number_Hs = one_hot_encoding(atom.GetTotalNumHs(includeNeighbors=True),permitted_Hs)
+
+
     atom_feature_vector = atom_type_encoding + n_heavy_neighbors_encoding + formal_charge_encoding \
                         + hybridisation_type_encoding + is_in_a_ring_encoding + is_aromatic_encoding \
-                        + atomic_mass + vdw_radius + covalent_radius
+                        + atomic_mass + vdw_radius + covalent_radius + valence + number_Hs
 
     return np.array(atom_feature_vector)
 
@@ -65,32 +73,34 @@ def get_bond_features(bond):
     return np.array(bond_feature_vector)
 
 def create_graph_molecule(smiles, target=None):
-    # convert SMILES to RDKit mol object
+    # SMILES a mol
     canon_smiles = Chem.CanonSmiles(smiles)
     mol = Chem.MolFromSmiles(canon_smiles)
-    # get feature dimensions
+
+    # Dimensiones
     n_nodes = mol.GetNumAtoms()
     n_edges = 2*mol.GetNumBonds()
 
+    #Features para cada atomo
     unrelated_smiles = "O=O"
     unrelated_mol = Chem.MolFromSmiles(unrelated_smiles)
     n_node_features = len(get_atomic_features(unrelated_mol.GetAtomWithIdx(0)))
     n_edge_features = len(get_bond_features(unrelated_mol.GetBondBetweenAtoms(0,1)))
     
-    # construct node feature matrix X of shape (n_nodes, n_node_features)
+    # Matriz de features: (n_nodes, n_node_features)
     X = np.zeros((n_nodes, n_node_features))
     for atom in mol.GetAtoms():
         X[atom.GetIdx(), :] = get_atomic_features(atom)
         
     X = torch.tensor(X, dtype = torch.float)
     
-    # construct edge index array E of shape (2, n_edges)
+    # Indices para ejes del grafo (2, n_edges)
     (rows, cols) = np.nonzero(GetAdjacencyMatrix(mol))
     torch_rows = torch.from_numpy(rows.astype(np.int64)).to(torch.long)
     torch_cols = torch.from_numpy(cols.astype(np.int64)).to(torch.long)
     E = torch.stack([torch_rows, torch_cols], dim = 0)
     
-    # construct edge feature array EF of shape (n_edges, n_edge_features)
+    # Features de los ejes (n_edges, n_edge_features)
     EF = np.zeros((n_edges, n_edge_features))
     
     for (k, (i,j)) in enumerate(zip(rows, cols)):
