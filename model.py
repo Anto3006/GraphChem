@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATConv
 from torch_geometric.nn import global_add_pool, SAGPooling
 from torch_geometric.utils import mask_select,index_to_mask
+from torch_geometric.nn import BatchNorm
+
 
 class GNN(nn.Module):
 
@@ -14,12 +16,14 @@ class GNN(nn.Module):
         torch.manual_seed(3006)
         self.skip_connection = skip_connection
         self.conv_layers = nn.ModuleList()
+        self.batch_norm_layers = nn.ModuleList()
         self.fc_layers = nn.ModuleList()
         in_features = node_features
         out_features = hidden_channels
         self.l = Linear(in_features,out_features)
         in_features = out_features
         for count in range(conv_layer_count):
+            self.batch_norm_layers.append(BatchNorm(in_features))
             self.conv_layers.append(GATConv(in_features,out_features,edge_dim=edge_features,heads=heads,dropout=conv_layer_dropout[count],concat=False))
         in_features += graph_feature_count
         for count in range(fc_layer_count):
@@ -36,8 +40,9 @@ class GNN(nn.Module):
         x_skip = None
         if self.skip_connection:
             x_skip = torch.clone(x)
-        for layer in self.conv_layers:
-            x = layer(x,edge_index,edge_attr=edge_features)
+        for batch_layer,conv_layer in zip(self.batch_norm_layers,self.conv_layers):
+            x = batch_layer(x)
+            x = conv_layer(x,edge_index,edge_attr=edge_features)
             x = x.relu()
             if self.skip_connection:
                 x = x + x_skip
