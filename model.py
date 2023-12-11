@@ -49,7 +49,7 @@ class GNN(nn.Module):
                 x_skip = torch.clone(x)
         if is_mask:
             if masked_node != None:
-                mask = 1*index_to_mask(torch.tensor([i for i in range(len(x)) if i != masked_node]),size=len(x))
+                mask = 1*index_to_mask(torch.tensor([i for i in range(len(x)) if i not in masked_node]),size=len(x))
                 mask = mask.view(-1,1).to("cuda")
                 x = torch.mul(mask,x)
         x = global_add_pool(x,batch)

@@ -1,0 +1,16 @@
+{
+    "gnn_args": {
+        "hidden_layer_size": 256,
+        "attention_heads": 4,
+        "conv_layer_count" : 3,
+        "conv_layer_dropout" : [0.2,0.2,0.2],
+        "fc_layer_count" : 5,
+        "fc_layer_dropout" : [0,0,0,0,0],
+        "skip_connection": true
+    },
+
+    "optimizer_args": {
+        "lr": 0.00005,
+        "weight_decay": 0.0005
+    }
+}
