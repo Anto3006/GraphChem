@@ -1,2 +1,4 @@
 *.png
-__pycache__
+*.pickle
+*.pyc
+__pycache__/

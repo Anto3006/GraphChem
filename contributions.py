@@ -44,7 +44,6 @@ def contributions_fgs(gnn,smiles,filename="mol.png"):
     contr_fgs = {}
     x = {}
     if len(mol.GetAtoms()) > 1:
-        grupo = 1
         for fg in fgs:
             masked_atoms = list(fg.atomIds)
             if len(masked_atoms) < len(mol.GetAtoms()):

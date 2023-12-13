@@ -3,7 +3,7 @@
         "hidden_layer_size": 256,
         "attention_heads": 4,
         "conv_layer_count" : 3,
-        "conv_layer_dropout" : [0.2,0.2,0.2],
+        "conv_layer_dropout" : [0,0,0],
         "fc_layer_count" : 5,
         "fc_layer_dropout" : [0,0,0,0,0],
         "skip_connection": true

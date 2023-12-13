@@ -10,6 +10,16 @@ def read_gnn_parameter_file(filename):
 def read_command_line_args():
     parser = argparse.ArgumentParser(prog="GNN",
                                      description="Graph Neural Network for chemical properties prediction")
-    parser.add_argument("task",choices=["cv","save","eval","contr_atoms","contr_fgs"],required=True)
-    parser.add_argument("-f","--folds",default=5,required=False,type=int)
-    parser.add_argument("")
+    parser.add_argument("task",choices=["cv","save","eval","contr_atoms","contr_fgs"])
+    parser.add_argument("-v","--folds",default=5,required=False,type=int)
+    parser.add_argument("-f","--file",required=True,type=str)
+    parser.add_argument("-s","--split",default=0,required=False,type=int)
+    parser.add_argument("-m","--model",required=False,type=str,default="model.pickle")
+    parser.add_argument("-e","--epoch",required=False,type=int,default=100)
+    parser.add_argument("-t","--train",required=False)
+    parser.add_argument("-b","--batch",required=False,type=int,default=128)
+
+    args = parser.parse_args()
+
+    return args
+

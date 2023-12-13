@@ -9,10 +9,10 @@ from math import sqrt
 
 device = 'cuda'
 
-def create_gnn(gnn_args,optimizer_args):
+def create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count):
     gnn = GNN(  gnn_args["conv_layer_count"],gnn_args["conv_layer_dropout"], \
                 gnn_args["fc_layer_count"],gnn_args["fc_layer_dropout"] , \
-                gnn_args["node_feature_count"],gnn_args["edge_feature_count"], \
+                node_feature_count,edge_feature_count, \
                 gnn_args["hidden_layer_size"], gnn_args["attention_heads"], \
                 skip_connection=gnn_args["skip_connection"])
     gnn = gnn.to(device)
@@ -24,9 +24,11 @@ def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,tra
     kf = KFold(fold_count,shuffle=True,random_state=3006)
     folds = kf.split(train_data)
     results = {}
+    node_feature_count = train_data[0].num_features
+    edge_feature_count = train_data[0].num_edge_features
     for fold, (train_index,validation_index) in enumerate(folds):
         torch.manual_seed(seed)
-        gnn,optimizer = create_gnn(gnn_args,optimizer_args)
+        gnn,optimizer = create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count)
         criterion = torch.nn.MSELoss()
         train_fold = [train_data[i] for i in train_index]
         validation_fold = [train_data[i] for i in validation_index]
@@ -57,7 +59,9 @@ def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,tra
 
 def get_trained_model(gnn_args,optimizer_args,train_data,max_epoch,train_batch_size=64,seed=3006):
     torch.manual_seed(seed)
-    gnn,optimizer = create_gnn(gnn_args,optimizer_args)
+    node_feature_count = train_data[0].num_features
+    edge_feature_count = train_data[0].num_edge_features
+    gnn,optimizer = create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count)
     criterion = torch.nn.MSELoss()
     train_loader = DataLoader(dataset = train_data, batch_size = train_batch_size)
     for epoch in range(max_epoch):
@@ -90,3 +94,26 @@ def test(gnn,loader):
         out = gnn(data.x, data.edge_index, data.edge_attr,data.batch)  
         error += torch.nn.MSELoss(reduction="sum")(out, torch.unsqueeze(data.y,1)).item()
     return sqrt(error/len(loader.dataset))
+
+def evaluate_model(model_filename,test_data):
+    model = None
+    try:
+        model_file = open(model_filename,"rb")
+        model = pickle.load(model_file)
+        model_file.close()
+        test_loader = DataLoader(dataset = test_data, batch_size = 1)
+        result = test(model,test_loader)
+        return result
+    except:
+        print("Error: model not found")
+        return None
+
+def load_model(model_filename):
+    model = None
+    try:
+        model_file = open(model_filename,"rb")
+        model = pickle.load(model_file)
+        model_file.close()
+    except:
+        print("Error: model not found")
+    return model
