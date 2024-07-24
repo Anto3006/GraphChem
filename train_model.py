@@ -20,7 +20,7 @@ def create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count):
     return gnn,optimizer
 
 
-def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,train_batch_size=64,validation_batch_size=1,seed=3006):
+def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,data_augmentation=None,train_batch_size=64,validation_batch_size=1,seed=3006):
     kf = KFold(fold_count,shuffle=True,random_state=3006)
     folds = kf.split(train_data)
     results = {}
@@ -31,6 +31,10 @@ def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,tra
         gnn,optimizer = create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count)
         criterion = torch.nn.MSELoss()
         train_fold = [train_data[i] for i in train_index]
+        if data_augmentation is not None:
+            for mol in train_fold:
+                train_fold.append(data_augmentation.apply_augmentation(mol))
+
         validation_fold = [train_data[i] for i in validation_index]
         train_loader_fold = DataLoader(dataset = train_fold, batch_size = train_batch_size)
         validation_loader_fold = DataLoader(dataset = validation_fold, batch_size = validation_batch_size)

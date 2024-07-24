@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 from rdkit.Chem.rdmolops import GetAdjacencyMatrix
+from auglichem.molecule import Compose, RandomAtomMask, RandomBondDelete, MotifRemoval
 
 def one_hot_encoding(value, permitted_values):
     if value not in permitted_values:
@@ -77,6 +78,12 @@ def create_graph_molecule(smiles, target=None):
     canon_smiles = Chem.CanonSmiles(smiles)
     mol = Chem.MolFromSmiles(canon_smiles)
 
+    graph = mol_to_graph(mol, target)
+    graph.smiles = smiles
+
+    return graph
+
+def mol_to_graph(mol, target=None):
     # Dimensiones
     n_nodes = mol.GetNumAtoms()
     n_edges = 2*mol.GetNumBonds()
@@ -95,9 +102,16 @@ def create_graph_molecule(smiles, target=None):
     X = torch.tensor(X, dtype = torch.float)
     
     # Indices para ejes del grafo (2, n_edges)
-    (rows, cols) = np.nonzero(GetAdjacencyMatrix(mol))
-    torch_rows = torch.from_numpy(rows.astype(np.int64)).to(torch.long)
-    torch_cols = torch.from_numpy(cols.astype(np.int64)).to(torch.long)
+    rows = []
+    cols = []
+    for bond in mol.GetBonds():
+        inicio, final = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        rows += [inicio, final]
+        cols += [final, inicio]
+
+    torch_rows = torch.tensor(rows,dtype=torch.long)
+    torch_cols = torch.tensor(cols,dtype=torch.long)
+
     E = torch.stack([torch_rows, torch_cols], dim = 0)
     
     # Features de los ejes (n_edges, n_edge_features)
@@ -110,7 +124,7 @@ def create_graph_molecule(smiles, target=None):
     EF = torch.tensor(EF, dtype = torch.float)
     
     
-    graph = Data(X, edge_index=E, edge_attr=EF,smiles=smiles) 
+    graph = Data(X, edge_index=E, edge_attr=EF) 
 
     if target != None: 
         y_tensor = torch.tensor(np.array([target]), dtype = torch.float)
@@ -118,8 +132,24 @@ def create_graph_molecule(smiles, target=None):
         
     return graph
 
+
+
 def create_graph_list(smiles_list,target_list):
     data = []
     for smiles,target in zip(smiles_list,target_list):
         data.append(create_graph_molecule(smiles,target))
     return data
+
+def augment_data(graph_molecule):
+    atom_masker = RandomAtomMask(0.5)
+    augmented = atom_masker(graph_molecule)
+    print(augmented)
+
+
+
+if __name__ == "__main__":
+    smiles = "Brc1ccccc1Br"
+    graph = create_graph_molecule(smiles)
+    for i in range(10):
+        augment_data(graph)
+
