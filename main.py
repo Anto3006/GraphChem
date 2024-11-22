@@ -1,16 +1,18 @@
 from data_reader import read_smiles_target
-from molecule_to_graph import create_graph_list
+from molecule_to_graph import create_graphs
 from sklearn.model_selection import train_test_split
-from parameterLoader import read_gnn_parameter_file, read_command_line_args
+from parameterLoader import read_gnn_parameter_file, read_command_line_args, read_graph_creation_file
 from train_model import cross_validation, get_trained_model, save_trained_model, evaluate_model, load_model
 from contributions import contributions_atoms,contributions_fgs
 import numpy as np
 
 GNN_PARAMETER_FILE = "parametersGNN.json"
+GRAPH_CREATION_PARAMETER_FILE ="parametersGraphCreation.json"
 
 def main():
     args = read_command_line_args()
     gnn_args,optimizer_args = read_gnn_parameter_file(GNN_PARAMETER_FILE)
+    graph_creation_params = read_graph_creation_file(GRAPH_CREATION_PARAMETER_FILE)
     if args.task == "cv":
         folds = args.folds
         split = args.split
@@ -20,7 +22,7 @@ def main():
         smiles, target = read_smiles_target(train_file)
         if split > 0:
             smiles,_,target,_ = train_test_split(smiles,target,test_size=split*0.01,random_state=3006)
-        molecules_graphs = create_graph_list(smiles,target)
+        molecules_graphs = create_graphs(smiles,target,graph_creation_params)
         cross_validation(gnn_args,optimizer_args,folds,molecules_graphs,epoch,batch)
     elif args.task == "save":
         train_file = args.file
@@ -31,14 +33,14 @@ def main():
         smiles, target = read_smiles_target(train_file)
         if split > 0:
             smiles,_,target,_ = train_test_split(smiles,target,test_size=split*0.01,random_state=3006)
-        molecules_graphs = create_graph_list(smiles,target)
+        molecules_graphs = create_graphs(smiles,target,graph_creation_params)
         model = get_trained_model(gnn_args,optimizer_args,molecules_graphs,epoch,batch)
         save_trained_model(model,model_name)
     elif args.task == "eval":
         test_file = args.file
         model_name = args.model
         smiles, target = read_smiles_target(test_file)
-        molecules_graphs = create_graph_list(smiles,target)
+        molecules_graphs = create_graphs(smiles,target,graph_creation_params)
         result = evaluate_model(model_name,molecules_graphs)
         if result is not None:
             print("Evaluation: ",result)

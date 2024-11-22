@@ -1,9 +1,13 @@
 from rdkit.Chem import Draw
 from PIL import ImageDraw
 from PIL import ImageFont
-from molecule_to_graph import create_graph_molecule
-import rdkit.Contrib.IFG.ifg as IFG
+from molecule_to_graph import MolToGraph
 from rdkit.Chem import CanonSmiles, MolFromSmiles
+from rdkit.Chem import RDConfig
+import os
+import sys
+sys.path.append(os.path.join(RDConfig.RDContribDir,"IFG"))
+import ifg as IFG
 from torch import tensor
 from rdkit.Chem.Draw import rdMolDraw2D
 import random
@@ -14,7 +18,8 @@ fg_colors = {}
 
 def contributions_atoms(gnn,smiles,filename="mol.png"):
     gnn.eval()
-    graph = create_graph_molecule(smiles).to(device)
+    graph_generator = MolToGraph()
+    graph = graph_generator.smiles_to_graph(smiles).to(device)
     canon_smiles = CanonSmiles(smiles)
     mol = MolFromSmiles(canon_smiles)
     batch = tensor([0 for i in range(len(graph.x))]).to(device)
@@ -33,7 +38,8 @@ def contributions_atoms(gnn,smiles,filename="mol.png"):
 
 def contributions_fgs(gnn,smiles,filename="mol.png"):
     gnn.eval()
-    graph = create_graph_molecule(smiles).to(device)
+    graph_generator = MolToGraph()
+    graph = graph_generator.smiles_to_graph(smiles).to(device)
     canon_smiles = CanonSmiles(smiles)
     mol = MolFromSmiles(canon_smiles)
     fgs = IFG.identify_functional_groups(mol)

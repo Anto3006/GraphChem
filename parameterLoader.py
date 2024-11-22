@@ -7,6 +7,12 @@ def read_gnn_parameter_file(filename):
     parameter_file.close()
     return parameter_data["gnn_args"],parameter_data["optimizer_args"]
 
+def read_graph_creation_file(filename):
+    parameter_file = open(filename,"r")
+    parameter_data = json.load(parameter_file)
+    parameter_file.close()
+    return parameter_data
+
 def read_command_line_args():
     parser = argparse.ArgumentParser(prog="GNN",
                                      description="Graph Neural Network for chemical properties prediction")
@@ -17,7 +23,7 @@ def read_command_line_args():
     parser.add_argument("-m","--model",required=False,type=str,default="model.pickle")
     parser.add_argument("-e","--epoch",required=False,type=int,default=100)
     parser.add_argument("-t","--train",required=False)
-    parser.add_argument("-b","--batch",required=False,type=int,default=128)
+    parser.add_argument("-b","--batch",required=False,type=int,default=512)
 
     args = parser.parse_args()
 

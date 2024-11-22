@@ -19,8 +19,7 @@ def create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count):
     optimizer = torch.optim.Adam(gnn.parameters(), lr = optimizer_args["lr"], weight_decay=optimizer_args["weight_decay"])
     return gnn,optimizer
 
-
-def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,data_augmentation=None,train_batch_size=64,validation_batch_size=1,seed=3006):
+def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,train_batch_size=64,validation_batch_size=1,seed=3006):
     kf = KFold(fold_count,shuffle=True,random_state=3006)
     folds = kf.split(train_data)
     results = {}
@@ -31,9 +30,6 @@ def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,dat
         gnn,optimizer = create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count)
         criterion = torch.nn.MSELoss()
         train_fold = [train_data[i] for i in train_index]
-        if data_augmentation is not None:
-            for mol in train_fold:
-                train_fold.append(data_augmentation.apply_augmentation(mol))
 
         validation_fold = [train_data[i] for i in validation_index]
         train_loader_fold = DataLoader(dataset = train_fold, batch_size = train_batch_size)
@@ -83,7 +79,7 @@ def save_trained_model(gnn,model_filename="model.pickle"):
 def train(gnn,optimizer,criterion,loader):
     gnn.train()
     for data in loader:  # Iterate in batches over the training dataset.
-        data = data.to(device)
+        #data = data.to(device)
         out = gnn(data.x, data.edge_index, data.edge_attr,data.batch)  # Perform a single forward pass.
         loss = criterion(out, torch.unsqueeze(data.y,1))  # Compute the loss.
         loss.backward()  # Derive gradients.
