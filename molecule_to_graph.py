@@ -14,6 +14,7 @@ class MolToGraph:
     def __init__(self):
         unrelated_smiles = "C-C"
         self.unrelated_mol = Chem.MolFromSmiles(unrelated_smiles)
+        self.permitted_atoms = ['Cl', 'C', 'O', 'Br', 'N', 'F', 'S', 'I', 'Si','P',"Unknown"]
         pass
 
     def create_graph_list(self, smiles_list,target_list, rep=1):
@@ -32,10 +33,10 @@ class MolToGraph:
 
     def get_node_features(self,mol):
         n_nodes = mol.GetNumAtoms()
-        n_node_features = len(MolToGraph.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
+        n_node_features = len(self.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
         node_features = np.zeros((n_nodes, n_node_features))
         for atom in mol.GetAtoms():
-            node_features[atom.GetIdx(), :] = MolToGraph.get_atomic_features(atom)
+            node_features[atom.GetIdx(), :] = self.get_atomic_features(atom)
             
         node_features = torch.tensor(node_features, dtype = torch.float)
 
@@ -79,37 +80,9 @@ class MolToGraph:
             
         return graph
 
-    @staticmethod
-    def one_hot_encoding(value, permitted_values):
-        if value not in permitted_values:
-            value = permitted_values[-1]
-        
-        encoding = [int(is_value_equal) for is_value_equal in list(map(lambda v: value == v,permitted_values))]
-        return encoding
+    def get_atomic_features(self,atom):
 
-    @staticmethod
-    def get_atom_in_molecule_count(smiles_list):
-        atom_count = {}
-        for smiles in smiles_list:
-            print(smiles)
-            mol = Chem.MolFromSmiles(smiles)
-            atom_in_mol = {}
-            for atom in mol.GetAtoms():
-                s = atom.GetSymbol()
-                if s not in atom_in_mol:
-                    atom_in_mol[s] = True
-            for atom_symbol in atom_in_mol:
-                if atom_symbol in atom_count:
-                    atom_count[atom_symbol] += 1
-                else:
-                    atom_count[atom_symbol] = 1
-        return atom_count
-
-    @staticmethod
-    def get_atomic_features(atom):
-        permitted_atoms = ['Cl', 'C', 'O', 'Br', 'N', 'F', 'S', 'I', 'Si','P',"Unknown"]
-
-        atom_type_encoding = MolToGraph.one_hot_encoding(atom.GetSymbol(),permitted_atoms)
+        atom_type_encoding = MolToGraph.one_hot_encoding(atom.GetSymbol(),self.permitted_atoms)
         n_heavy_neighbors_encoding = MolToGraph.one_hot_encoding(atom.GetDegree(),[0,1,2,3,4,"More than 4"])
         formal_charge_encoding = MolToGraph.one_hot_encoding(atom.GetFormalCharge(),[-3,-2,-1,0,1,2,3,"Other"])
         hybridisation_type_encoding = MolToGraph.one_hot_encoding(str(atom.GetHybridization()), ["S", "SP", "SP2", "SP3", "SP3D", "SP3D2", "OTHER"])
@@ -137,6 +110,36 @@ class MolToGraph:
 
         return np.array(atom_feature_vector)
 
+    def set_permitted_atoms(self, permitted_atoms):
+        self.permitted_atoms = permitted_atoms
+
+    @staticmethod
+    def one_hot_encoding(value, permitted_values):
+        if value not in permitted_values:
+            value = permitted_values[-1]
+        
+        encoding = [int(is_value_equal) for is_value_equal in list(map(lambda v: value == v,permitted_values))]
+        return encoding
+
+    @staticmethod
+    def get_atom_in_molecule_count(smiles_list):
+        atom_count = {}
+        for smiles in smiles_list:
+            print(smiles)
+            mol = Chem.MolFromSmiles(smiles)
+            atom_in_mol = {}
+            for atom in mol.GetAtoms():
+                s = atom.GetSymbol()
+                if s not in atom_in_mol:
+                    atom_in_mol[s] = True
+            for atom_symbol in atom_in_mol:
+                if atom_symbol in atom_count:
+                    atom_count[atom_symbol] += 1
+                else:
+                    atom_count[atom_symbol] = 1
+        return atom_count
+
+
     @staticmethod
     def get_bond_features(bond):
         permitted_bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
@@ -161,7 +164,7 @@ class AtomMaskingMolToGraph(MolToGraph):
 
     def get_node_features(self,mol):
         n_nodes = mol.GetNumAtoms()
-        n_node_features = len(MolToGraph.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
+        n_node_features = len(self.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
         node_features = np.zeros((n_nodes, n_node_features))
         mask = np.zeros(n_node_features)
         number_atoms_mask = int(min(max(1,self.prob*n_nodes),n_nodes))
@@ -171,7 +174,7 @@ class AtomMaskingMolToGraph(MolToGraph):
             if atom_id in masked_atoms:
                 node_features[atom_id, :] = np.copy(mask)
             else:
-                node_features[atom_id, :] = MolToGraph.get_atomic_features(atom)
+                node_features[atom_id, :] = self.get_atomic_features(atom)
             
         node_features = torch.tensor(node_features, dtype = torch.float)
 
@@ -225,7 +228,7 @@ class SubgraphRemovalMolToGraph(MolToGraph):
 
     def get_node_features(self,mol):
         n_nodes = mol.GetNumAtoms()
-        n_node_features = len(MolToGraph.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
+        n_node_features = len(self.get_atomic_features(self.unrelated_mol.GetAtomWithIdx(0)))
         number_nodes_to_mask = max(1,self.prob*n_nodes)
         node_features = np.zeros((n_nodes, n_node_features))
         mask = np.zeros(n_node_features)
@@ -249,7 +252,7 @@ class SubgraphRemovalMolToGraph(MolToGraph):
             if atom_id in masked_atoms:
                 node_features[atom_id, :] = np.copy(mask)
             else:
-                node_features[atom_id, :] = MolToGraph.get_atomic_features(atom)
+                node_features[atom_id, :] = self.get_atomic_features(atom)
         node_features = torch.tensor(node_features, dtype = torch.float)
 
         return node_features

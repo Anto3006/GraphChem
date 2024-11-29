@@ -19,7 +19,8 @@ def create_gnn(gnn_args,optimizer_args,node_feature_count,edge_feature_count):
     optimizer = torch.optim.Adam(gnn.parameters(), lr = optimizer_args["lr"], weight_decay=optimizer_args["weight_decay"])
     return gnn,optimizer
 
-def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,train_batch_size=64,validation_batch_size=1,seed=3006):
+def cross_validation(gnn_args,optimizer_args,fold_count,train_data,max_epoch,
+                     train_batch_size=64,validation_batch_size=1,seed=3006):
     kf = KFold(fold_count,shuffle=True,random_state=3006)
     folds = kf.split(train_data)
     results = {}

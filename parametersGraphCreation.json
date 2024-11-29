@@ -1,9 +1,9 @@
 {
 
-    "atom_masking_rep": 4,
+    "atom_masking_rep": 1,
     "atom_masking_prob": 0.5,
-    "edge_removal_rep": 4,
+    "edge_removal_rep": 1,
     "edge_removal_prob": 0.5,
-    "subgraph_removal_rep":4,
+    "subgraph_removal_rep":1,
     "subgraph_removal_prob": 0.5
 }
